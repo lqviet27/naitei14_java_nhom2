@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="vi"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+
+<header class="header">
+    <div th:replace="~{fragments/header :: header}"></div>
+</header>
+
+<div class="admin-layout">
+
+    <aside class="sidebar">
+        <div th:replace="~{fragments/sidebar-admin :: sidebar}"></div>
+    </aside>
+
+    <div class="admin-main-panel">
+
+        <main class="main-content" layout:fragment="content">
+            <p>Đang tải nội dung...</p>
+        </main>
+
+        <footer class="footer">
+            <div th:replace="~{fragments/footer :: footer}"></div>
+        </footer>
+
+    </div>
+</div>
+
+<script th:src="@{/js/admin.js}"></script>
+<th:block layout:fragment="scripts"></th:block>
+</body>
+</html>
