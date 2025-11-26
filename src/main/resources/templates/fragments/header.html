@@ -3,6 +3,8 @@
     <nav>
         <a th:href="@{/}">Home</a>
         <a th:href="@{/profile}">My Profile</a>
-        <a th:href="@{/logout}">Logout</a>
+        <form th:action="@{/admin/logout}" method="post">            
+           <button type="submit">Logout</button>                    
+        </form>   
     </nav>
 </header>

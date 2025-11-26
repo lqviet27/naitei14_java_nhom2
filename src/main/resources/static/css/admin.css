@@ -35,6 +35,7 @@ body {
 .header nav {
     display: flex;
     gap: 1.5rem;
+     align-items: center;
 }
 
 .header nav a {
@@ -51,7 +52,29 @@ body {
     background: rgba(255, 255, 255, 0.2);
     transform: translateY(-2px);
 }
+.header nav form {
+    display: inline;
+    margin: 0;
+    padding: 0;
+}
+.header nav button {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 0.95rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    vertical-align: middle;
+}
 
+.header nav button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
 .admin-layout {
     display: flex;
     margin-top: 70px;
