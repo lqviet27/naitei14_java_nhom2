@@ -167,17 +167,19 @@
                     </td>
                     <td th:text="${user.createdAt != null ? #temporals.format(user.createdAt, 'dd/MM/yyyy HH:mm') : 'N/A'}">01/01/2025 00:00</td>
                     <td class="action-buttons">
+                        <a th:href="@{/admin/users/{id}(id=${user.id})}" class="btn-icon btn-view" title="View">
+                            <i class="fas fa-eye"></i>
+                        </a>
                         <a th:href="@{/admin/users/{id}/edit(id=${user.id})}" class="btn-icon btn-edit" title="Edit">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <button type="button" 
-                                class="btn-icon btn-delete" 
-                                title="Delete" 
-                                th:data-user-id="${user.id}"
-                                th:data-user-name="${user.name}"
-                                onclick="confirmDelete(this.dataset.userId, this.dataset.userName)">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <form th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post" style="display: inline;"
+                              onsubmit="return confirm('Are you sure you want to delete user &quot;' + this.dataset.userName + '&quot;?');"
+                              th:data-user-name="${user.name}">
+                            <button type="submit" class="btn-icon btn-delete" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
                     </td>
                 </tr>
             </tbody>
@@ -240,33 +242,7 @@
     </div>
 </section>
 
-<th:block layout:fragment="scripts">
-    <script th:inline="javascript">
-        function confirmDelete(userId, userName) {
-            if (confirm('Are you sure you want to delete user "' + userName + '"?')) {
-                // Implement delete functionality
-                fetch('/admin/users/' + userId, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        alert('User deleted successfully');
-                        window.location.reload();
-                    } else {
-                        alert('Failed to delete user');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while deleting the user');
-                });
-            }
-        }
-    </script>
-</th:block>
+
 
 </body>
 </html>

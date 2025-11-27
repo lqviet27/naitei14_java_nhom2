@@ -1,15 +1,11 @@
 package vn.sun.membermanagementsystem.services.impls;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.sun.membermanagementsystem.dto.request.CreateSkillRequest;
-import vn.sun.membermanagementsystem.dto.request.UpdateSkillRequest;
 import vn.sun.membermanagementsystem.dto.response.SkillDTO;
 import vn.sun.membermanagementsystem.entities.Skill;
-import vn.sun.membermanagementsystem.exception.DuplicateResourceException;
 import vn.sun.membermanagementsystem.exception.ResourceNotFoundException;
 import vn.sun.membermanagementsystem.mapper.SkillMapper;
 import vn.sun.membermanagementsystem.repositories.SkillRepository;
@@ -17,6 +13,10 @@ import vn.sun.membermanagementsystem.services.SkillService;
 
 import java.time.LocalDateTime;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SkillServiceImpl implements SkillService {
@@ -29,6 +29,16 @@ public class SkillServiceImpl implements SkillService {
     public Page<SkillDTO> getAllSkills(Pageable pageable) {
         Page<Skill> skillPage = skillRepository.findAllActive(pageable);
         return skillPage.map(skillMapper::toDTO);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SkillDTO> getAllSkills() {
+        log.info("Getting all skills");
+        List<Skill> skills = skillRepository.findAllNotDeleted();
+        return skills.stream()
+                .map(skillMapper::toDTO)
+                .collect(Collectors.toList());
     }
     
     @Override
@@ -77,4 +87,5 @@ public class SkillServiceImpl implements SkillService {
         skill.setDeletedAt(LocalDateTime.now());
         skillRepository.save(skill);
     }
+        
 }

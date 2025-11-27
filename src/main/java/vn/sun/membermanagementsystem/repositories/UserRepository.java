@@ -2,6 +2,7 @@ package vn.sun.membermanagementsystem.repositories;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -21,6 +22,31 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmailAndNotDeleted(@Param("email") String email);
     @Query("SELECT u FROM User u WHERE u.id = :id AND u.deletedAt IS NULL")
     Optional<User> findByIdAndNotDeleted(@Param("id") Long id);
+    
+    @Query("SELECT DISTINCT u FROM User u " +
+            "LEFT JOIN FETCH u.teamMemberships tm " +
+            "LEFT JOIN FETCH tm.team " +
+            "WHERE u.id = :id AND u.deletedAt IS NULL")
+    Optional<User> findByIdWithTeams(@Param("id") Long id);
+    
+    @Query("SELECT DISTINCT u FROM User u " +
+            "LEFT JOIN FETCH u.projectMemberships pm " +
+            "LEFT JOIN FETCH pm.project " +
+            "WHERE u.id = :id AND u.deletedAt IS NULL")
+    Optional<User> findByIdWithProjects(@Param("id") Long id);
+    
+    @Query("SELECT DISTINCT u FROM User u " +
+            "LEFT JOIN FETCH u.positionHistories ph " +
+            "LEFT JOIN FETCH ph.position " +
+            "WHERE u.id = :id AND u.deletedAt IS NULL")
+    Optional<User> findByIdWithPositionHistories(@Param("id") Long id);
+    
+    @Query("SELECT DISTINCT u FROM User u " +
+            "LEFT JOIN FETCH u.userSkills us " +
+            "LEFT JOIN FETCH us.skill " +
+            "WHERE u.id = :id AND u.deletedAt IS NULL")
+    Optional<User> findByIdWithSkills(@Param("id") Long id);
+    
     @Query("SELECT u FROM User u WHERE u.deletedAt IS NULL")
     List<User> findAllNotDeleted();
     @Query("SELECT u FROM User u WHERE u.status = :status AND u.deletedAt IS NULL")
