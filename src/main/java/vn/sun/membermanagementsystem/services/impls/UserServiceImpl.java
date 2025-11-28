@@ -1,6 +1,7 @@
 package vn.sun.membermanagementsystem.services.impls;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -8,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.sun.membermanagementsystem.annotation.LogActivity;
 import vn.sun.membermanagementsystem.dto.request.UserCreateDTO;
 import vn.sun.membermanagementsystem.dto.request.UserUpdateDTO;
 import vn.sun.membermanagementsystem.dto.response.UserSummaryDTO;
@@ -40,6 +42,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @LogActivity(action = "CREATE_USER", entityType = "USER", description = "Create new user")
     public UserSummaryDTO createUser(UserCreateDTO userCreateDTO) {
         log.info("Creating user with email: {}", userCreateDTO.getEmail());
         
@@ -116,6 +119,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @LogActivity(action = "EDIT_USER", entityType = "USER", description = "Update user information")
     public UserSummaryDTO updateUser(UserUpdateDTO userUpdateDTO) {
         log.info("Updating user with ID: {}", userUpdateDTO.getId());
         
@@ -221,6 +225,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
+    @LogActivity(action = "DELETE_USER", entityType = "USER", description = "Delete user")
     public boolean deleteUser(Long userId) {
         log.info("Deleting user with ID: {}", userId);
         
