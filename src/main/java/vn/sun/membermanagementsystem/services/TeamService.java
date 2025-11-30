@@ -5,6 +5,7 @@ import vn.sun.membermanagementsystem.dto.request.CreateTeamRequest;
 import vn.sun.membermanagementsystem.dto.request.UpdateTeamRequest;
 import vn.sun.membermanagementsystem.dto.response.TeamDTO;
 import vn.sun.membermanagementsystem.dto.response.TeamDetailDTO;
+import vn.sun.membermanagementsystem.dto.response.UserSelectionDTO;
 import vn.sun.membermanagementsystem.entities.Team;
 
 import java.util.List;
@@ -25,4 +26,6 @@ public interface TeamService {
     TeamDetailDTO getTeamDetail(Long id);
 
     List<TeamDTO> getAllTeams();
+
+    List<UserSelectionDTO> getActiveUsersByTeam(Long teamId);
 }
