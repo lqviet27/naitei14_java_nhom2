@@ -144,4 +144,25 @@ public class ProjectServiceImpl implements ProjectService {
 
         return req;
     }
+
+    @Override
+    @Transactional
+    @LogActivity(action = "CANCEL_PROJECT", entityType = "PROJECT", description = "Cancel project and deactivate members")
+    public void cancelProject(Long id) {
+        Project project = projectRepo.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Project not found with id: " + id));
+
+        if (project.getStatus() == Project.ProjectStatus.COMPLETED ||
+                project.getStatus() == Project.ProjectStatus.CANCELLED) {
+            throw new IllegalStateException("Không thể xoá dự án đã hoàn thành hoặc đã bị huỷ.");
+        }
+
+        project.setStatus(Project.ProjectStatus.CANCELLED);
+        project.setDeletedAt(java.time.LocalDateTime.now());
+        leadershipService.endAllLeadership(project);
+
+        membershipService.removeAllMembers(project);
+
+        projectRepo.save(project);
+    }
 }

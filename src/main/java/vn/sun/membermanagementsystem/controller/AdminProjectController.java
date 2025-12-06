@@ -1,5 +1,6 @@
 package vn.sun.membermanagementsystem.controller;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -147,6 +148,26 @@ public class AdminProjectController {
             model.addAttribute("projectId", id);
             return "admin/projects/edit";
         }
+    }
+
+    @PostMapping("/delete/{id}")
+    public String deleteProject(
+            @PathVariable Long id,
+            RedirectAttributes redirectAttributes
+    ) {
+        try {
+            projectService.cancelProject(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Project has been cancelled successfully.");
+
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        } catch (EntityNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Error: " + e.getMessage());
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "An error occurred while cancelling the project.");
+        }
+
+        return "redirect:/admin/projects";
     }
 
     private void populateFormData(Model model, Long teamId) {
