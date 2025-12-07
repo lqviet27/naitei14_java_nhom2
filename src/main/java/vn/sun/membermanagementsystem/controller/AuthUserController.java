@@ -18,7 +18,7 @@ import vn.sun.membermanagementsystem.dto.request.LoginRequest;
 import vn.sun.membermanagementsystem.dto.request.RegisterRequest;
 import vn.sun.membermanagementsystem.dto.response.LoginResponse;
 import vn.sun.membermanagementsystem.dto.response.MessageResponse;
-import vn.sun.membermanagementsystem.dto.response.UserProfileDTO;
+import vn.sun.membermanagementsystem.dto.response.UserListItemDTO;
 import vn.sun.membermanagementsystem.entities.User;
 import vn.sun.membermanagementsystem.enums.UserRole;
 import vn.sun.membermanagementsystem.enums.UserStatus;
@@ -207,7 +207,7 @@ public class AuthUserController {
             User user = userDetailsService.getUserByEmail(userDetails.getUsername());
             
             // ⭐ Map sang DTO không có passwordHash
-            UserProfileDTO profile = UserProfileDTO.builder()
+            UserListItemDTO profile = UserListItemDTO.builder()
                 .id(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())

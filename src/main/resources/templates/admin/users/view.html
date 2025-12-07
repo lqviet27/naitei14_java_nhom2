@@ -131,7 +131,7 @@
             <div class="detail-card-body">
                 <div th:if="${user.skills != null && !user.skills.isEmpty()}" class="view-skill-list">
                     <div th:each="skill : ${user.skills}" class="view-skill-item">
-                        <span class="view-skill-name" th:text="${skill.skill != null ? skill.skill.name : 'Unknown'}"></span>
+                        <span class="view-skill-name" th:text="${skill.skillName != null ? skill.skillName : 'Unknown'}"></span>
                         <span class="view-skill-level badge" 
                               th:class="${skill.level == 'EXPERT' ? 'badge badge-success' : 
                                          (skill.level == 'ADVANCED' ? 'badge badge-info' : 

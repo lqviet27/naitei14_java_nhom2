@@ -7,11 +7,9 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import vn.sun.membermanagementsystem.entities.User;
 import vn.sun.membermanagementsystem.enums.UserRole;
 import vn.sun.membermanagementsystem.enums.UserStatus;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -39,14 +37,5 @@ public class UserCreateDTO {
     
     private Long positionId;
     
-    private List<UserSkillDTO> skills;
-    
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class UserSkillDTO {
-        private Long skillId;
-        private String level; // BEGINNER, INTERMEDIATE, ADVANCED, EXPERT
-        private BigDecimal usedYearNumber;
-    }
+    private List<UserSkillRequestDTO> skills;
 }

@@ -71,7 +71,7 @@ public class AdminProjectController {
             model.addAttribute("projectRequest", new CreateProjectRequest());
         }
         model.addAttribute("teams", teamService.getAllTeams());
-        List<UserSummaryDTO> activeUsers = userService.getUsersByStatus(UserStatus.ACTIVE);
+        List<UserListItemDTO> activeUsers = userService.getUsersByStatus(UserStatus.ACTIVE);
         model.addAttribute("allUsers", activeUsers);
         return "admin/projects/create";
     }

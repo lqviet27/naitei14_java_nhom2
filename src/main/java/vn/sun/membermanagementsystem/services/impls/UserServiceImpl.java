@@ -1,7 +1,6 @@
 package vn.sun.membermanagementsystem.services.impls;
 
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -11,10 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.sun.membermanagementsystem.annotation.LogActivity;
 import vn.sun.membermanagementsystem.dto.request.UserCreateDTO;
+import vn.sun.membermanagementsystem.dto.request.UserSkillRequestDTO;
 import vn.sun.membermanagementsystem.dto.request.UserUpdateDTO;
-import vn.sun.membermanagementsystem.dto.response.UserSummaryDTO;
+import vn.sun.membermanagementsystem.dto.response.UserListItemDTO;
+import vn.sun.membermanagementsystem.dto.response.UserProfileDetailDTO;
 import vn.sun.membermanagementsystem.entities.*;
-import vn.sun.membermanagementsystem.enums.MembershipStatus;
 import vn.sun.membermanagementsystem.enums.UserRole;
 import vn.sun.membermanagementsystem.enums.UserStatus;
 import vn.sun.membermanagementsystem.exception.DuplicateResourceException;
@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     @LogActivity(action = "CREATE_USER", entityType = "USER", description = "Create new user")
-    public UserSummaryDTO createUser(UserCreateDTO userCreateDTO) {
+    public UserProfileDetailDTO createUser(UserCreateDTO userCreateDTO) {
         log.info("Creating user with email: {}", userCreateDTO.getEmail());
 
         if (userRepository.existsByEmailAndNotDeleted(userCreateDTO.getEmail())) {
@@ -94,7 +94,7 @@ public class UserServiceImpl implements UserService {
 
         // Tạo User Skills nếu có
         if (userCreateDTO.getSkills() != null && !userCreateDTO.getSkills().isEmpty()) {
-            for (UserCreateDTO.UserSkillDTO skillDTO : userCreateDTO.getSkills()) {
+            for (UserSkillRequestDTO skillDTO : userCreateDTO.getSkills()) {
                 Skill skill = skillRepository.findByIdAndNotDeleted(skillDTO.getSkillId())
                         .orElseThrow(() -> new ResourceNotFoundException(
                                 "Skill not found with ID: " + skillDTO.getSkillId()));
@@ -102,14 +102,7 @@ public class UserServiceImpl implements UserService {
                 UserSkill userSkill = new UserSkill();
                 userSkill.setUser(savedUser);
                 userSkill.setSkill(skill);
-
-                try {
-                    userSkill.setLevel(UserSkill.Level.valueOf(skillDTO.getLevel().toUpperCase()));
-                } catch (Exception e) {
-                    log.warn("Invalid skill level: {}, using INTERMEDIATE as default", skillDTO.getLevel());
-                    userSkill.setLevel(UserSkill.Level.INTERMEDIATE);
-                }
-
+                userSkill.setLevel(skillDTO.getLevel() != null ? skillDTO.getLevel() : UserSkill.Level.INTERMEDIATE);
                 userSkill.setUsedYearNumber(skillDTO.getUsedYearNumber());
                 userSkill.setCreatedAt(LocalDateTime.now());
                 userSkill.setUpdatedAt(LocalDateTime.now());
@@ -118,13 +111,18 @@ public class UserServiceImpl implements UserService {
             log.info("Skills added for user ID: {}, count: {}", savedUser.getId(), userCreateDTO.getSkills().size());
         }
 
-        return userMapper.toSummaryDTO(savedUser);
+        // Reload user with all associations for complete DTO
+        userRepository.findByIdWithProjects(savedUser.getId());
+        userRepository.findByIdWithPositionHistories(savedUser.getId());
+        userRepository.findByIdWithSkills(savedUser.getId());
+
+        return userMapper.toProfileDetailDTO(savedUser);
     }
 
     @Override
     @Transactional
     @LogActivity(action = "EDIT_USER", entityType = "USER", description = "Update user information")
-    public UserSummaryDTO updateUser(UserUpdateDTO userUpdateDTO) {
+    public UserProfileDetailDTO updateUser(UserUpdateDTO userUpdateDTO) {
         log.info("Updating user with ID: {}", userUpdateDTO.getId());
 
         User user = userRepository.findByIdAndNotDeleted(userUpdateDTO.getId())
@@ -203,23 +201,16 @@ public class UserServiceImpl implements UserService {
 
             // Thêm skills mới
             if (!userUpdateDTO.getSkills().isEmpty()) {
-                for (UserUpdateDTO.UserSkillDTO skillDTO : userUpdateDTO.getSkills()) {
-                    Skill skill = skillRepository.findByIdAndNotDeleted(skillDTO.getSkillId())
+                for (UserUpdateDTO.SkillEntry skillEntry : userUpdateDTO.getSkills()) {
+                    Skill skill = skillRepository.findByIdAndNotDeleted(skillEntry.getSkillId())
                             .orElseThrow(() -> new ResourceNotFoundException(
-                                    "Skill not found with ID: " + skillDTO.getSkillId()));
+                                    "Skill not found with ID: " + skillEntry.getSkillId()));
 
                     UserSkill userSkill = new UserSkill();
                     userSkill.setUser(updatedUser);
                     userSkill.setSkill(skill);
-
-                    try {
-                        userSkill.setLevel(UserSkill.Level.valueOf(skillDTO.getLevel().toUpperCase()));
-                    } catch (Exception e) {
-                        log.warn("Invalid skill level: {}, using BEGINNER as default", skillDTO.getLevel());
-                        userSkill.setLevel(UserSkill.Level.BEGINNER);
-                    }
-
-                    userSkill.setUsedYearNumber(skillDTO.getUsedYearNumber());
+                    userSkill.setLevel(skillEntry.getLevel() != null ? skillEntry.getLevel() : UserSkill.Level.BEGINNER);
+                    userSkill.setUsedYearNumber(skillEntry.getUsedYearNumber());
                     userSkill.setCreatedAt(LocalDateTime.now());
                     userSkill.setUpdatedAt(LocalDateTime.now());
                     userSkillRepository.save(userSkill);
@@ -228,7 +219,12 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        return userMapper.toSummaryDTO(updatedUser);
+        // Reload user with all associations for complete DTO
+        userRepository.findByIdWithProjects(updatedUser.getId());
+        userRepository.findByIdWithPositionHistories(updatedUser.getId());
+        userRepository.findByIdWithSkills(updatedUser.getId());
+
+        return userMapper.toProfileDetailDTO(updatedUser);
     }
 
     @Override
@@ -252,8 +248,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public UserSummaryDTO getUserById(Long userId) {
-        log.info("Getting user with ID: {}", userId);
+    public UserProfileDetailDTO getUserDetailById(Long userId) {
+        log.info("Getting user detail with ID: {}", userId);
 
         User user = userRepository.findByIdWithTeams(userId)
                 .orElseThrow(() -> {
@@ -262,44 +258,59 @@ public class UserServiceImpl implements UserService {
                 });
 
         userRepository.findByIdWithProjects(userId);
-
         userRepository.findByIdWithPositionHistories(userId);
-
         userRepository.findByIdWithSkills(userId);
 
-        return userMapper.toSummaryDTO(user);
+        return userMapper.toProfileDetailDTO(user);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserSummaryDTO> getAllUsers() {
+    public UserUpdateDTO getUserFormById(Long userId) {
+        log.info("Getting user form data with ID: {}", userId);
+
+        User user = userRepository.findByIdWithTeams(userId)
+                .orElseThrow(() -> {
+                    log.error("User not found with ID: {}", userId);
+                    return new ResourceNotFoundException("User not found with ID: " + userId);
+                });
+
+        userRepository.findByIdWithPositionHistories(userId);
+        userRepository.findByIdWithSkills(userId);
+
+        return userMapper.toUpdateDTO(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserListItemDTO> getAllUsers() {
         log.info("Getting all users");
 
         List<User> users = userRepository.findAllNotDeleted();
-        return userMapper.toSummaryDTOList(users);
+        return userMapper.toListItemDTOList(users);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserSummaryDTO> getUsersByStatus(UserStatus status) {
+    public List<UserListItemDTO> getUsersByStatus(UserStatus status) {
         log.info("Getting users by status: {}", status);
 
         List<User> users = userRepository.findByStatusAndNotDeleted(status);
-        return userMapper.toSummaryDTOList(users);
+        return userMapper.toListItemDTOList(users);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserSummaryDTO> getUsersByRole(UserRole role) {
+    public List<UserListItemDTO> getUsersByRole(UserRole role) {
         log.info("Getting users by role: {}", role);
 
         List<User> users = userRepository.findByRoleAndNotDeleted(role);
-        return userMapper.toSummaryDTOList(users);
+        return userMapper.toListItemDTOList(users);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public UserSummaryDTO getUserByEmail(String email) {
+    public UserListItemDTO getUserByEmail(String email) {
         log.info("Getting user by email: {}", email);
 
         User user = userRepository.findByEmailAndNotDeleted(email)
@@ -308,37 +319,37 @@ public class UserServiceImpl implements UserService {
                     return new ResourceNotFoundException("User not found with email: " + email);
                 });
 
-        return userMapper.toSummaryDTO(user);
+        return userMapper.toListItemDTO(user);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserSummaryDTO> getAllUsersWithPagination(Pageable pageable) {
-        log.info("Getting all users with pagination: page={}, size={}", pageable.getPageNumber(),
+    public Page<UserListItemDTO> getAllUsersForList(Pageable pageable) {
+        log.info("Getting all users for list with pagination: page={}, size={}", pageable.getPageNumber(),
                 pageable.getPageSize());
 
         Page<User> users = userRepository.findAllNotDeleted(pageable);
-        return users.map(userMapper::toSummaryDTO);
+        return users.map(userMapper::toListItemDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserSummaryDTO> searchUsers(String keyword, UserStatus status, UserRole role, Pageable pageable) {
-        log.info("Searching users with keyword={}, status={}, role={}, page={}, size={}",
+    public Page<UserListItemDTO> searchUsersForList(String keyword, UserStatus status, UserRole role, Pageable pageable) {
+        log.info("Searching users for list with keyword={}, status={}, role={}, page={}, size={}",
                 keyword, status, role, pageable.getPageNumber(), pageable.getPageSize());
 
         Page<User> users = userRepository.searchUsers(keyword, status, role, pageable);
-        return users.map(userMapper::toSummaryDTO);
+        return users.map(userMapper::toListItemDTO);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<UserSummaryDTO> searchUsersWithTeam(String keyword, UserStatus status, UserRole role, Long teamId,
+    public Page<UserListItemDTO> searchUsersForListWithTeam(String keyword, UserStatus status, UserRole role, Long teamId,
             Pageable pageable) {
-        log.info("Searching users with keyword={}, status={}, role={}, teamId={}, page={}, size={}",
+        log.info("Searching users for list with keyword={}, status={}, role={}, teamId={}, page={}, size={}",
                 keyword, status, role, teamId, pageable.getPageNumber(), pageable.getPageSize());
 
         Page<User> users = userRepository.searchUsersWithTeam(keyword, status, role, teamId, pageable);
-        return users.map(userMapper::toSummaryDTO);
+        return users.map(userMapper::toListItemDTO);
     }
 }

@@ -6,24 +6,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import vn.sun.membermanagementsystem.dto.request.UserCreateDTO;
 import vn.sun.membermanagementsystem.dto.request.UserUpdateDTO;
-import vn.sun.membermanagementsystem.dto.response.UserSummaryDTO;
+import vn.sun.membermanagementsystem.dto.response.UserListItemDTO;
+import vn.sun.membermanagementsystem.dto.response.UserProfileDetailDTO;
 import vn.sun.membermanagementsystem.enums.UserRole;
 import vn.sun.membermanagementsystem.enums.UserStatus;
 import vn.sun.membermanagementsystem.services.PositionService;
 import vn.sun.membermanagementsystem.services.TeamService;
 import vn.sun.membermanagementsystem.services.UserService;
 import vn.sun.membermanagementsystem.services.SkillService;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -57,11 +53,11 @@ public class AdminUserController {
         
         Pageable pageable = PageRequest.of(page, size, sort);
         
-        Page<UserSummaryDTO> userPage;
+        Page<UserListItemDTO> userPage;
         if (keyword != null || status != null || role != null || teamId != null) {
-            userPage = userService.searchUsersWithTeam(keyword, status, role, teamId, pageable);
+            userPage = userService.searchUsersForListWithTeam(keyword, status, role, teamId, pageable);
         } else {
-            userPage = userService.getAllUsersWithPagination(pageable);
+            userPage = userService.getAllUsersForList(pageable);
         }
         
         model.addAttribute("users", userPage.getContent());
@@ -85,7 +81,6 @@ public class AdminUserController {
     
     @GetMapping("/admin/users/create")
     public String showCreateUserForm(Model model) {
-        // Lấy danh sách positions và skills cho dropdown
         Pageable pageable = PageRequest.of(0, 1000);
         model.addAttribute("positions", positionService.getAllPositions(pageable).getContent());
         model.addAttribute("skills", skillService.getAllSkills());
@@ -96,11 +91,10 @@ public class AdminUserController {
 
     @GetMapping("/admin/users/{id}/edit")
     public String showEditUserForm(@PathVariable Long id, Model model) {
-        // Lấy thông tin user
-        UserSummaryDTO user = userService.getUserById(id);
+
+        UserUpdateDTO user = userService.getUserFormById(id);
         model.addAttribute("user", user);
         
-        // Lấy danh sách positions và skills cho dropdown
         Pageable pageable = PageRequest.of(0, 1000);
         model.addAttribute("positions", positionService.getAllPositions(pageable).getContent());
         model.addAttribute("skills", skillService.getAllSkills());
@@ -160,7 +154,7 @@ public class AdminUserController {
         
         if (bindingResult.hasErrors()) {
             System.out.println("Errors: " + bindingResult.getAllErrors());
-            UserSummaryDTO user = userService.getUserById(id);
+            UserUpdateDTO user = userService.getUserFormById(id);
             model.addAttribute("user", user);
             Pageable pageable = PageRequest.of(0, 1000);
             model.addAttribute("positions", positionService.getAllPositions(pageable).getContent());
@@ -176,7 +170,7 @@ public class AdminUserController {
         } catch (Exception e) {
             System.out.println("Exception: " + e.getMessage());
             e.printStackTrace();
-            UserSummaryDTO user = userService.getUserById(id);
+            UserUpdateDTO user = userService.getUserFormById(id);
             model.addAttribute("user", user);
             Pageable pageable = PageRequest.of(0, 1000);
             model.addAttribute("positions", positionService.getAllPositions(pageable).getContent());
@@ -190,7 +184,7 @@ public class AdminUserController {
     
     @GetMapping("/admin/users/{id}")
     public String viewUser(@PathVariable Long id, Model model) {
-        UserSummaryDTO user = userService.getUserById(id);
+        UserProfileDetailDTO user = userService.getUserDetailById(id);
         model.addAttribute("user", user);
         return "admin/users/view";
     }

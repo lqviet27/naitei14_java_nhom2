@@ -2,24 +2,36 @@ package vn.sun.membermanagementsystem.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
+import vn.sun.membermanagementsystem.dto.request.UserUpdateDTO;
 import vn.sun.membermanagementsystem.dto.response.*;
 import vn.sun.membermanagementsystem.entities.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
+    // ===== UserListItemDTO mappings =====
     @Mapping(target = "activeTeam", expression = "java(getActiveTeamName(user))")
-    @Mapping(target = "activeProjects", expression = "java(mapActiveProjects(user))")
-    @Mapping(target = "currentPosition", expression = "java(mapCurrentPosition(user))")
-    @Mapping(target = "skills", expression = "java(mapUserSkills(user))")
-    UserSummaryDTO toSummaryDTO(User user);
+    UserListItemDTO toListItemDTO(User user);
 
-    List<UserSummaryDTO> toSummaryDTOList(List<User> users);
-    
+    List<UserListItemDTO> toListItemDTOList(List<User> users);
+
+    // ===== UserProfileDetailDTO mappings =====
+    @Mapping(target = "activeTeam", expression = "java(getActiveTeamName(user))")
+    @Mapping(target = "activeProjects", expression = "java(mapActiveProjectsForDetail(user))")
+    @Mapping(target = "currentPosition", expression = "java(mapCurrentPositionForDetail(user))")
+    @Mapping(target = "skills", expression = "java(mapSkillsForDetail(user))")
+    UserProfileDetailDTO toProfileDetailDTO(User user);
+
+    // ===== UserUpdateDTO mappings (for edit form) =====
+    @Mapping(target = "positionId", expression = "java(getCurrentPositionId(user))")
+    @Mapping(target = "positionName", expression = "java(getCurrentPositionName(user))")
+    @Mapping(target = "skills", expression = "java(mapSkillsForUpdateForm(user))")
+    @Mapping(target = "password", ignore = true)
+    UserUpdateDTO toUpdateDTO(User user);
+
+    // ===== Helper methods =====
     default String getActiveTeamName(User user) {
         if (user.getTeamMemberships() == null || user.getTeamMemberships().isEmpty()) {
             return null;
@@ -33,8 +45,9 @@ public interface UserMapper {
                 .findFirst()
                 .orElse(null);
     }
-    
-    default List<UserSummaryDTO.SimpleProjectDTO> mapActiveProjects(User user) {
+
+    // For UserProfileDetailDTO
+    default List<UserProfileDetailDTO.ProjectInfo> mapActiveProjectsForDetail(User user) {
         if (user.getProjectMemberships() == null || user.getProjectMemberships().isEmpty()) {
             return List.of();
         }
@@ -43,7 +56,7 @@ public interface UserMapper {
                         && pm.getLeftAt() == null
                         && pm.getProject() != null
                         && pm.getProject().getDeletedAt() == null)
-                .map(pm -> UserSummaryDTO.SimpleProjectDTO.builder()
+                .map(pm -> UserProfileDetailDTO.ProjectInfo.builder()
                         .id(pm.getProject().getId())
                         .name(pm.getProject().getName())
                         .abbreviation(pm.getProject().getAbbreviation())
@@ -51,36 +64,70 @@ public interface UserMapper {
                         .build())
                 .toList();
     }
-    
-    default PositionDTO mapCurrentPosition(User user) {
+
+    default UserProfileDetailDTO.PositionInfo mapCurrentPositionForDetail(User user) {
         if (user.getPositionHistories() == null || user.getPositionHistories().isEmpty()) {
             return null;
         }
         return user.getPositionHistories().stream()
                 .filter(ph -> ph.getEndedAt() == null && ph.getPosition() != null)
                 .findFirst()
-                .map(ph -> PositionDTO.builder()
+                .map(ph -> UserProfileDetailDTO.PositionInfo.builder()
                         .id(ph.getPosition().getId())
                         .name(ph.getPosition().getName())
                         .abbreviation(ph.getPosition().getAbbreviation())
                         .build())
                 .orElse(null);
     }
-    
-    default List<UserSummaryDTO.UserSkillDTO> mapUserSkills(User user) {
+
+    default List<UserProfileDetailDTO.SkillInfo> mapSkillsForDetail(User user) {
         if (user.getUserSkills() == null || user.getUserSkills().isEmpty()) {
             return List.of();
         }
         return user.getUserSkills().stream()
                 .filter(us -> us.getSkill() != null && us.getSkill().getDeletedAt() == null)
-                .map(us -> UserSummaryDTO.UserSkillDTO.builder()
+                .map(us -> UserProfileDetailDTO.SkillInfo.builder()
                         .skillId(us.getSkill().getId())
-                        .skill(SkillDTO.builder()
-                                .id(us.getSkill().getId())
-                                .name(us.getSkill().getName())
-                                .description(us.getSkill().getDescription())
-                                .build())
-                        .level(us.getLevel() != null ? us.getLevel().name() : null)
+                        .skillName(us.getSkill().getName())
+                        .level(us.getLevel())
+                        .usedYearNumber(us.getUsedYearNumber())
+                        .build())
+                .toList();
+    }
+
+    // For UserUpdateDTO (edit form)
+    default Long getCurrentPositionId(User user) {
+        if (user.getPositionHistories() == null || user.getPositionHistories().isEmpty()) {
+            return null;
+        }
+        return user.getPositionHistories().stream()
+                .filter(ph -> ph.getEndedAt() == null && ph.getPosition() != null)
+                .findFirst()
+                .map(ph -> ph.getPosition().getId())
+                .orElse(null);
+    }
+
+    default String getCurrentPositionName(User user) {
+        if (user.getPositionHistories() == null || user.getPositionHistories().isEmpty()) {
+            return null;
+        }
+        return user.getPositionHistories().stream()
+                .filter(ph -> ph.getEndedAt() == null && ph.getPosition() != null)
+                .findFirst()
+                .map(ph -> ph.getPosition().getName())
+                .orElse(null);
+    }
+
+    default List<UserUpdateDTO.SkillEntry> mapSkillsForUpdateForm(User user) {
+        if (user.getUserSkills() == null || user.getUserSkills().isEmpty()) {
+            return List.of();
+        }
+        return user.getUserSkills().stream()
+                .filter(us -> us.getSkill() != null && us.getSkill().getDeletedAt() == null)
+                .map(us -> UserUpdateDTO.SkillEntry.builder()
+                        .skillId(us.getSkill().getId())
+                        .skillName(us.getSkill().getName())
+                        .level(us.getLevel())
                         .usedYearNumber(us.getUsedYearNumber())
                         .build())
                 .toList();

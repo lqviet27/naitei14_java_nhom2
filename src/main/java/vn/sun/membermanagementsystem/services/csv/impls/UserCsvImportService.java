@@ -6,9 +6,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.sun.membermanagementsystem.dto.request.CreateSkillRequest;
 import vn.sun.membermanagementsystem.dto.request.UserCreateDTO;
+import vn.sun.membermanagementsystem.dto.request.UserSkillRequestDTO;
 import vn.sun.membermanagementsystem.dto.request.csv.CsvImportResult;
 import vn.sun.membermanagementsystem.dto.response.SkillDTO;
-import vn.sun.membermanagementsystem.dto.response.UserSummaryDTO;
+import vn.sun.membermanagementsystem.dto.response.UserProfileDetailDTO;
 import vn.sun.membermanagementsystem.entities.Skill;
 import vn.sun.membermanagementsystem.entities.User;
 import vn.sun.membermanagementsystem.entities.UserSkill;
@@ -191,17 +192,17 @@ public class UserCsvImportService extends AbstractCsvImportService<User> {
 
         // Process skills
         if (isNotBlank(skillsStr)) {
-            List<UserCreateDTO.UserSkillDTO> skillDTOs = processSkillsForDto(skillsStr, rowNumber);
+            List<UserSkillRequestDTO> skillDTOs = processSkillsForDto(skillsStr, rowNumber);
             userCreateDTO.setSkills(skillDTOs);
         }
 
-        UserSummaryDTO createdUser = userService.createUser(userCreateDTO);
+        UserProfileDetailDTO createdUser = userService.createUser(userCreateDTO);
         log.info("Row {}: Created user with ID: {} via UserService", rowNumber, createdUser.getId());
         return userRepository.findByIdAndNotDeleted(createdUser.getId()).orElse(null);
     }
 
-    private List<UserCreateDTO.UserSkillDTO> processSkillsForDto(String skillsStr, int rowNumber) {
-        List<UserCreateDTO.UserSkillDTO> skillDTOs = new ArrayList<>();
+    private List<UserSkillRequestDTO> processSkillsForDto(String skillsStr, int rowNumber) {
+        List<UserSkillRequestDTO> skillDTOs = new ArrayList<>();
         String[] skillEntries = skillsStr.split("\\|");
         
         for (String entry : skillEntries) {
@@ -230,9 +231,9 @@ public class UserCsvImportService extends AbstractCsvImportService<User> {
                 skillId = skillOpt.get().getId();
             }
             
-            UserCreateDTO.UserSkillDTO skillDTO = new UserCreateDTO.UserSkillDTO();
+            UserSkillRequestDTO skillDTO = new UserSkillRequestDTO();
             skillDTO.setSkillId(skillId);
-            skillDTO.setLevel(levelStr.toUpperCase());
+            skillDTO.setLevel(UserSkill.Level.valueOf(levelStr.toUpperCase()));
             skillDTO.setUsedYearNumber(years);
             skillDTOs.add(skillDTO);
         }

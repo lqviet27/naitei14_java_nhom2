@@ -1,20 +1,22 @@
 package vn.sun.membermanagementsystem.dto.request;
 
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import vn.sun.membermanagementsystem.entities.User;
+import vn.sun.membermanagementsystem.entities.UserSkill;
 import vn.sun.membermanagementsystem.enums.UserRole;
 import vn.sun.membermanagementsystem.enums.UserStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserUpdateDTO {
@@ -37,14 +39,19 @@ public class UserUpdateDTO {
     
     private Long positionId;
     
-    private List<UserSkillDTO> skills;
-    
+    private String positionName;
+
+    @Builder.Default
+    private List<SkillEntry> skills = new ArrayList<>();
+
     @Data
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class UserSkillDTO {
+    public static class SkillEntry {
         private Long skillId;
-        private String level; // BEGINNER, INTERMEDIATE, ADVANCED, EXPERT
+        private String skillName;
+        private UserSkill.Level level;
         private BigDecimal usedYearNumber;
     }
 }

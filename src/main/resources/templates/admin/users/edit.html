@@ -110,7 +110,7 @@
                         <option th:each="pos : ${positions}" 
                                 th:value="${pos.id}" 
                                 th:text="${pos.name + ' (' + pos.abbreviation + ')'}"
-                                th:selected="${user.currentPosition != null && pos.id == user.currentPosition.id}"></option>
+                                th:selected="${user.positionId != null && pos.id == user.positionId}"></option>
                     </select>
                     <small class="form-text">Changing position will create a new position history record</small>
                 </div>

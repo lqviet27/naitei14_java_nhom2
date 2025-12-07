@@ -8,16 +8,23 @@ import vn.sun.membermanagementsystem.enums.UserRole;
 import vn.sun.membermanagementsystem.enums.UserStatus;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
+/**
+ * DTO for displaying user in list/table view.
+ * Contains only essential fields for list display.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserProfileDTO {
+public class UserListItemDTO {
     private Long id;
     private String name;
     private String email;
     private LocalDate birthday;
     private UserRole role;
     private UserStatus status;
+    private LocalDateTime createdAt;
+    private String activeTeam;
 }

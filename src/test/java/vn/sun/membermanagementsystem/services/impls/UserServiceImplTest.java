@@ -9,7 +9,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import vn.sun.membermanagementsystem.dto.request.UserCreateDTO;
-import vn.sun.membermanagementsystem.dto.response.UserSummaryDTO;
+import vn.sun.membermanagementsystem.dto.response.UserListItemDTO;
+import vn.sun.membermanagementsystem.dto.response.UserProfileDetailDTO;
 import vn.sun.membermanagementsystem.entities.User;
 import vn.sun.membermanagementsystem.enums.UserRole;
 import vn.sun.membermanagementsystem.enums.UserStatus;
@@ -46,7 +47,8 @@ class UserServiceImplTest {
 
     private User testUser;
     private UserCreateDTO userCreateDTO;
-    private UserSummaryDTO userSummaryDTO;
+    private UserProfileDetailDTO userProfileDetailDTO;
+    private UserListItemDTO userListItemDTO;
 
     @BeforeEach
     void setUp() {
@@ -72,7 +74,7 @@ class UserServiceImplTest {
         userCreateDTO.setRole(UserRole.MEMBER);
         userCreateDTO.setStatus(UserStatus.ACTIVE);
 
-        userSummaryDTO = UserSummaryDTO.builder()
+        userProfileDetailDTO = UserProfileDetailDTO.builder()
                 .id(1L)
                 .name("Lê Quốc Việt")
                 .email("le.quoc.viet-c@sun-asterisk.com")
@@ -82,6 +84,15 @@ class UserServiceImplTest {
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
+
+        userListItemDTO = UserListItemDTO.builder()
+                .id(1L)
+                .name("Lê Quốc Việt")
+                .email("le.quoc.viet-c@sun-asterisk.com")
+                .birthday(LocalDate.of(2004, 5, 27))
+                .role(UserRole.MEMBER)
+                .status(UserStatus.ACTIVE)
+                .build();
     }
 
     @Test
@@ -90,19 +101,19 @@ class UserServiceImplTest {
         when(userRepository.existsByEmailAndNotDeleted(userCreateDTO.getEmail())).thenReturn(false);
         when(passwordEncoder.encode(userCreateDTO.getPassword())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(testUser);
-        when(userMapper.toSummaryDTO(testUser)).thenReturn(userSummaryDTO);
+        when(userMapper.toProfileDetailDTO(testUser)).thenReturn(userProfileDetailDTO);
 
-        UserSummaryDTO result = userService.createUser(userCreateDTO);
+        UserProfileDetailDTO result = userService.createUser(userCreateDTO);
 
         assertNotNull(result);
-        assertEquals(userSummaryDTO.getId(), result.getId());
-        assertEquals(userSummaryDTO.getName(), result.getName());
-        assertEquals(userSummaryDTO.getEmail(), result.getEmail());
+        assertEquals(userProfileDetailDTO.getId(), result.getId());
+        assertEquals(userProfileDetailDTO.getName(), result.getName());
+        assertEquals(userProfileDetailDTO.getEmail(), result.getEmail());
 
         verify(userRepository, times(1)).existsByEmailAndNotDeleted(userCreateDTO.getEmail());
         verify(passwordEncoder, times(1)).encode(userCreateDTO.getPassword());
         verify(userRepository, times(1)).save(any(User.class));
-        verify(userMapper, times(1)).toSummaryDTO(testUser);
+        verify(userMapper, times(1)).toProfileDetailDTO(testUser);
     }
 
     @Test
@@ -131,9 +142,9 @@ class UserServiceImplTest {
             assertEquals(UserStatus.ACTIVE, user.getStatus());
             return testUser;
         });
-        when(userMapper.toSummaryDTO(any(User.class))).thenReturn(userSummaryDTO);
+        when(userMapper.toProfileDetailDTO(any(User.class))).thenReturn(userProfileDetailDTO);
 
-        UserSummaryDTO result = userService.createUser(userCreateDTO);
+        UserProfileDetailDTO result = userService.createUser(userCreateDTO);
 
         assertNotNull(result);
         verify(userRepository, times(1)).save(any(User.class));
@@ -168,28 +179,28 @@ class UserServiceImplTest {
     }
 
     @Test
-    @DisplayName("Get user by ID successfully")
-    void testGetUserById_Success() {
+    @DisplayName("Get user detail by ID successfully")
+    void testGetUserDetailById_Success() {
         when(userRepository.findByIdAndNotDeleted(1L)).thenReturn(Optional.of(testUser));
-        when(userMapper.toSummaryDTO(testUser)).thenReturn(userSummaryDTO);
+        when(userMapper.toProfileDetailDTO(testUser)).thenReturn(userProfileDetailDTO);
 
-        UserSummaryDTO result = userService.getUserById(1L);
+        UserProfileDetailDTO result = userService.getUserDetailById(1L);
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("Lê Quốc Việt", result.getName());
         verify(userRepository, times(1)).findByIdAndNotDeleted(1L);
-        verify(userMapper, times(1)).toSummaryDTO(testUser);
+        verify(userMapper, times(1)).toProfileDetailDTO(testUser);
     }
 
     @Test
-    @DisplayName("Get user by ID not found should throw ResourceNotFoundException")
-    void testGetUserById_NotFound_ThrowsException() {
+    @DisplayName("Get user detail by ID not found should throw ResourceNotFoundException")
+    void testGetUserDetailById_NotFound_ThrowsException() {
         when(userRepository.findByIdAndNotDeleted(1L)).thenReturn(Optional.empty());
 
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
-                () -> userService.getUserById(1L)
+                () -> userService.getUserDetailById(1L)
         );
 
         assertTrue(exception.getMessage().contains("User not found with ID"));
@@ -204,28 +215,31 @@ class UserServiceImplTest {
                 .name("Lê Quốc A")
                 .email("le.quoc.a@sun-asterisk.com")
                 .build();
-        
+
         List<User> users = Arrays.asList(testUser, user2);
-        List<UserSummaryDTO> expectedDTOs = Arrays.asList(userSummaryDTO, UserSummaryDTO.builder().id(2L).name("Lê Quốc A").build());
+        List<UserListItemDTO> expectedDTOs = Arrays.asList(
+                userListItemDTO,
+                UserListItemDTO.builder().id(2L).name("Lê Quốc A").build()
+        );
 
         when(userRepository.findAllNotDeleted()).thenReturn(users);
-        when(userMapper.toSummaryDTOList(users)).thenReturn(expectedDTOs);
+        when(userMapper.toListItemDTOList(users)).thenReturn(expectedDTOs);
 
-        List<UserSummaryDTO> result = userService.getAllUsers();
+        List<UserListItemDTO> result = userService.getAllUsers();
 
         assertNotNull(result);
         assertEquals(2, result.size());
         verify(userRepository, times(1)).findAllNotDeleted();
-        verify(userMapper, times(1)).toSummaryDTOList(users);
+        verify(userMapper, times(1)).toListItemDTOList(users);
     }
 
     @Test
     @DisplayName("Get all users returns empty list when no users exist")
     void testGetAllUsers_EmptyList() {
         when(userRepository.findAllNotDeleted()).thenReturn(List.of());
-        when(userMapper.toSummaryDTOList(anyList())).thenReturn(List.of());
+        when(userMapper.toListItemDTOList(anyList())).thenReturn(List.of());
 
-        List<UserSummaryDTO> result = userService.getAllUsers();
+        List<UserListItemDTO> result = userService.getAllUsers();
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -236,36 +250,36 @@ class UserServiceImplTest {
     @DisplayName("Get users by status successfully")
     void testGetUsersByStatus_Success() {
         List<User> users = Arrays.asList(testUser);
-        List<UserSummaryDTO> expectedDTOs = Arrays.asList(userSummaryDTO);
+        List<UserListItemDTO> expectedDTOs = Arrays.asList(userListItemDTO);
 
         when(userRepository.findByStatusAndNotDeleted(UserStatus.ACTIVE)).thenReturn(users);
-        when(userMapper.toSummaryDTOList(users)).thenReturn(expectedDTOs);
+        when(userMapper.toListItemDTOList(users)).thenReturn(expectedDTOs);
 
-        List<UserSummaryDTO> result = userService.getUsersByStatus(UserStatus.ACTIVE);
+        List<UserListItemDTO> result = userService.getUsersByStatus(UserStatus.ACTIVE);
 
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(UserStatus.ACTIVE, result.get(0).getStatus());
         verify(userRepository, times(1)).findByStatusAndNotDeleted(UserStatus.ACTIVE);
-        verify(userMapper, times(1)).toSummaryDTOList(users);
+        verify(userMapper, times(1)).toListItemDTOList(users);
     }
 
     @Test
     @DisplayName("Get users by role successfully")
     void testGetUsersByRole_Success() {
         List<User> users = Arrays.asList(testUser);
-        List<UserSummaryDTO> expectedDTOs = Arrays.asList(userSummaryDTO);
+        List<UserListItemDTO> expectedDTOs = Arrays.asList(userListItemDTO);
 
         when(userRepository.findByRoleAndNotDeleted(UserRole.MEMBER)).thenReturn(users);
-        when(userMapper.toSummaryDTOList(users)).thenReturn(expectedDTOs);
+        when(userMapper.toListItemDTOList(users)).thenReturn(expectedDTOs);
 
-        List<UserSummaryDTO> result = userService.getUsersByRole(UserRole.MEMBER);
+        List<UserListItemDTO> result = userService.getUsersByRole(UserRole.MEMBER);
 
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(UserRole.MEMBER, result.get(0).getRole());
         verify(userRepository, times(1)).findByRoleAndNotDeleted(UserRole.MEMBER);
-        verify(userMapper, times(1)).toSummaryDTOList(users);
+        verify(userMapper, times(1)).toListItemDTOList(users);
     }
 
     @Test
@@ -273,14 +287,14 @@ class UserServiceImplTest {
     void testGetUserByEmail_Success() {
         String email = "le.quoc.viet-c@sun-asterisk.com";
         when(userRepository.findByEmailAndNotDeleted(email)).thenReturn(Optional.of(testUser));
-        when(userMapper.toSummaryDTO(testUser)).thenReturn(userSummaryDTO);
+        when(userMapper.toListItemDTO(testUser)).thenReturn(userListItemDTO);
 
-        UserSummaryDTO result = userService.getUserByEmail(email);
+        UserListItemDTO result = userService.getUserByEmail(email);
 
         assertNotNull(result);
         assertEquals(email, result.getEmail());
         verify(userRepository, times(1)).findByEmailAndNotDeleted(email);
-        verify(userMapper, times(1)).toSummaryDTO(testUser);
+        verify(userMapper, times(1)).toListItemDTO(testUser);
     }
 
     @Test
@@ -288,7 +302,7 @@ class UserServiceImplTest {
     void testGetUserByEmail_NotFound_ThrowsException() {
         String email = "notfound@example.com";
         when(userRepository.findByEmailAndNotDeleted(email)).thenReturn(Optional.empty());
-        
+
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
                 () -> userService.getUserByEmail(email)
@@ -318,7 +332,7 @@ class UserServiceImplTest {
     void testCreateUser_EncodesPassword() {
         String rawPassword = "password123";
         String encodedPassword = "encodedPassword123";
-        
+
         userCreateDTO.setPassword(rawPassword);
         when(userRepository.existsByEmailAndNotDeleted(anyString())).thenReturn(false);
         when(passwordEncoder.encode(rawPassword)).thenReturn(encodedPassword);
@@ -327,7 +341,7 @@ class UserServiceImplTest {
             assertEquals(encodedPassword, user.getPasswordHash());
             return testUser;
         });
-        when(userMapper.toSummaryDTO(any(User.class))).thenReturn(userSummaryDTO);
+        when(userMapper.toProfileDetailDTO(any(User.class))).thenReturn(userProfileDetailDTO);
 
         userService.createUser(userCreateDTO);
 
@@ -346,12 +360,12 @@ class UserServiceImplTest {
             assertNull(user.getDeletedAt());
             return testUser;
         });
-        when(userMapper.toSummaryDTO(any(User.class))).thenReturn(userSummaryDTO);
+        when(userMapper.toProfileDetailDTO(any(User.class))).thenReturn(userProfileDetailDTO);
 
         userService.createUser(userCreateDTO);
 
         verify(userRepository, times(1)).save(argThat(user ->
-            user.getCreatedAt() != null && user.getUpdatedAt() != null && user.getDeletedAt() == null
+                user.getCreatedAt() != null && user.getUpdatedAt() != null && user.getDeletedAt() == null
         ));
     }
 }
