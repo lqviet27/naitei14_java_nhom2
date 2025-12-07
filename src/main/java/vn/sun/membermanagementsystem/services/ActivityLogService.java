@@ -13,4 +13,8 @@ public interface ActivityLogService {
     Page<ActivityLogDTO> searchLogs(String entityType, LocalDate fromDate, LocalDate toDate, Pageable pageable);
     
     ActivityLogDTO getLogById(Long id);
+    
+    void deleteLog(Long id);
+    
+    void deleteAllLogs();
 }

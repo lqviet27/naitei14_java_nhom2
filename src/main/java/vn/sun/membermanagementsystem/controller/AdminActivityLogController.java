@@ -9,6 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import vn.sun.membermanagementsystem.dto.response.ActivityLogDTO;
 import vn.sun.membermanagementsystem.repositories.ActivityLogRepository;
 import vn.sun.membermanagementsystem.services.ActivityLogService;
@@ -65,5 +66,27 @@ public class AdminActivityLogController {
         ActivityLogDTO log = activityLogService.getLogById(id);
         model.addAttribute("log", log);
         return "admin/activity-logs/view";
+    }
+
+    @PostMapping("/{id}/delete")
+    public String deleteActivityLog(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        try {
+            activityLogService.deleteLog(id);
+            redirectAttributes.addFlashAttribute("successMessage", "Activity log deleted successfully");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete activity log: " + e.getMessage());
+        }
+        return "redirect:/admin/activity-logs";
+    }
+
+    @PostMapping("/delete-all")
+    public String deleteAllActivityLogs(RedirectAttributes redirectAttributes) {
+        try {
+            activityLogService.deleteAllLogs();
+            redirectAttributes.addFlashAttribute("successMessage", "All activity logs deleted successfully");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete activity logs: " + e.getMessage());
+        }
+        return "redirect:/admin/activity-logs";
     }
 }

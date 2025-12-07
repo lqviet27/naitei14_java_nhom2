@@ -52,4 +52,24 @@ public class ActivityLogServiceImpl implements ActivityLogService {
                 .orElseThrow(() -> new ResourceNotFoundException("Activity log not found with ID: " + id));
         return activityLogMapper.toDTO(activityLog);
     }
+
+    @Override
+    @Transactional
+    public void deleteLog(Long id) {
+        log.info("Deleting activity log with ID: {}", id);
+        if (!activityLogRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Activity log not found with ID: " + id);
+        }
+        activityLogRepository.deleteById(id);
+        log.info("Activity log deleted successfully with ID: {}", id);
+    }
+
+    @Override
+    @Transactional
+    public void deleteAllLogs() {
+        log.info("Deleting all activity logs");
+        long count = activityLogRepository.count();
+        activityLogRepository.deleteAll();
+        log.info("Deleted {} activity logs", count);
+    }
 }

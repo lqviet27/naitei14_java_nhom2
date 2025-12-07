@@ -11,6 +11,21 @@
 <section layout:fragment="content">
     <div class="content-header">
         <h1><i class="fas fa-history"></i> Activity Logs</h1>
+        <div class="header-actions">
+            <button type="button" class="btn btn-danger" onclick="confirmDeleteAll()" th:if="${totalItems > 0}">
+                <i class="fas fa-trash-alt"></i> Delete All
+            </button>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success">
+        <i class="fas fa-check-circle"></i>
+        <span th:text="${successMessage}"></span>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger">
+        <i class="fas fa-exclamation-circle"></i>
+        <span th:text="${errorMessage}"></span>
     </div>
 
     <!-- Filter Section -->
@@ -115,6 +130,11 @@
                            class="btn-icon btn-view" title="View Details">
                             <i class="fas fa-eye"></i>
                         </a>
+                        <button type="button" class="btn-icon btn-delete" 
+                                th:onclick="'confirmDelete(' + ${log.id} + ')'" 
+                                title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </td>
                 </tr>
             </tbody>
@@ -175,6 +195,68 @@
             (<span th:text="${totalItems}">0</span> total)
         </div>
     </div>
+
+    <!-- Hidden forms for delete operations -->
+    <form id="deleteForm" method="post" style="display: none;"></form>
+    <form id="deleteAllForm" th:action="@{/admin/activity-logs/delete-all}" method="post" style="display: none;"></form>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> Confirm Delete</h3>
+            </div>
+            <div class="modal-body">
+                <p id="deleteModalMessage">Are you sure you want to delete this activity log?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        let deleteLogId = null;
+        let deleteAll = false;
+
+        function confirmDelete(id) {
+            deleteLogId = id;
+            deleteAll = false;
+            document.getElementById('deleteModalMessage').textContent = 'Are you sure you want to delete this activity log?';
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function confirmDeleteAll() {
+            deleteLogId = null;
+            deleteAll = true;
+            document.getElementById('deleteModalMessage').textContent = 'Are you sure you want to delete ALL activity logs? This action cannot be undone.';
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+            deleteLogId = null;
+            deleteAll = false;
+        }
+
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (deleteAll) {
+                document.getElementById('deleteAllForm').submit();
+            } else if (deleteLogId) {
+                const form = document.getElementById('deleteForm');
+                form.action = '/admin/activity-logs/' + deleteLogId + '/delete';
+                form.submit();
+            }
+        });
+
+        // Close modal when clicking outside
+        document.getElementById('deleteModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    </script>
 </section>
 
 </body>
