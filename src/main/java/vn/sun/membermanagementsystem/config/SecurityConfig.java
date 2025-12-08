@@ -52,7 +52,7 @@ public class SecurityConfig {
     @Order(1)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         http
-            .securityMatcher("/api/**")
+            .securityMatcher("/api/**","/swagger-ui/**", "/v3/api-docs/**")
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
@@ -60,6 +60,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/public/**").permitAll()
                 .requestMatchers("/api/v1/teams/**", "/api/v1/members/**").hasRole("USER")
                 .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())
