@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.sun.membermanagementsystem.entities.Position;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -15,6 +16,9 @@ public interface PositionRepository extends JpaRepository<Position, Long> {
     
     @Query("SELECT p FROM Position p WHERE p.deletedAt IS NULL")
     Page<Position> findAllActive(Pageable pageable);
+
+    @Query("SELECT p FROM Position p WHERE p.deletedAt IS NULL")
+    List<Position> findAllNotDeleted();
     
     @Query("SELECT p FROM Position p WHERE p.id = :id AND p.deletedAt IS NULL")
     Optional<Position> findByIdAndNotDeleted(@Param("id") Long id);
