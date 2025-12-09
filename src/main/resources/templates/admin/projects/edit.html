@@ -3,212 +3,296 @@
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layouts/admin-layout}">
 <head>
-  <title>Edit Project</title>
-  <link rel="stylesheet" th:href="@{/css/user-form.css?v=1.3}" />
+  <title layout:title-pattern="Edit Project - %s">Edit Project</title>
 </head>
 <body>
 
 <section layout:fragment="content">
 
   <div class="content-header">
-    <h1>Edit Project: <span th:text="${projectRequest.name}"></span></h1>
+    <h1>Edit Project</h1>
     <div class="header-actions">
-      <a th:href="@{/admin/projects}" class="btn btn-secondary">
-        <i class="fas fa-arrow-left"></i> Cancel
+      <a th:href="@{/admin/projects/{id}(id=${projectId})}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Back to Detail
       </a>
     </div>
   </div>
-
   <div class="form-container">
-    <form th:action="@{/admin/projects/edit/{id}(id=${projectId})}" th:object="${projectRequest}" method="post">
+    <form th:action="@{/admin/projects/edit/{id}(id=${projectId})}" th:object="${projectRequest}" method="post" id="editProjectForm">
 
-      <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
       <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger">
-        <p th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
+        <i class="fas fa-exclamation-circle"></i>
+        <span th:each="err : ${#fields.globalErrors()}" th:text="${err}" style="display:block;"></span>
       </div>
 
       <fieldset>
         <legend>Project Details</legend>
-        <div class="form-group">
-          <label>Project Name *</label>
-          <input type="text" th:field="*{name}" class="form-control" required />
-          <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-danger"></div>
-        </div>
 
-        <div class="form-group">
-          <label>Abbreviation *</label>
-          <input type="text" th:field="*{abbreviation}" class="form-control" required />
-        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Project Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" th:field="*{name}" placeholder="Enter project name" required />
+            <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="text-danger small"></div>
+          </div>
 
-        <div class="form-group">
-          <label>Start Date *</label>
-          <input type="date" th:field="*{startDate}" id="startDate" class="form-control" required />
-        </div>
+          <div class="form-group">
+            <label>Abbreviation <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" th:field="*{abbreviation}" placeholder="e.g. PJ-01" required />
+            <div th:if="${#fields.hasErrors('abbreviation')}" th:errors="*{abbreviation}" class="text-danger small"></div>
+          </div>
 
-        <div class="form-group">
-          <label>End Date</label>
-          <input type="date" th:field="*{endDate}" id="endDate" class="form-control" />
-          <small id="dateError" class="text-danger" style="display:none;">End Date must be strictly after Start Date.</small>
+          <div class="form-group">
+            <label>Start Date <span class="text-danger">*</span></label>
+            <input type="date" class="form-control" th:field="*{startDate}" id="startDate" required />
+            <div th:if="${#fields.hasErrors('startDate')}" th:errors="*{startDate}" class="text-danger small"></div>
+          </div>
+
+          <div class="form-group">
+            <label>End Date</label>
+            <input type="date" class="form-control" th:field="*{endDate}" id="endDate" />
+            <div th:if="${#fields.hasErrors('endDate')}" th:errors="*{endDate}" class="text-danger small"></div>
+            <small id="dateError" class="text-danger" style="display:none; margin-top:5px;">
+              <i class="fas fa-info-circle"></i> End Date must be after Start Date.
+            </small>
+          </div>
         </div>
       </fieldset>
 
       <fieldset>
-        <legend>Team & Personnel</legend>
-
-        <div class="alert alert-warning" id="teamChangeAlert" style="display:none; margin-bottom: 15px;">
-          <i class="fas fa-exclamation-triangle"></i>
-          <strong>Warning:</strong> Changing the team will reset the current Leader and Member selections.
-        </div>
+        <legend>Team & Members</legend>
 
         <div class="form-group">
-          <label>Select Team</label>
-          <select th:field="*{teamId}" id="teamSelect" class="form-control" onchange="onTeamChange(this.value)">
-            <option value="">-- No Team --</option>
+          <label>Responsible Team</label>
+          <select class="form-control" th:field="*{teamId}">
+            <option value="">-- No Specific Team --</option>
             <option th:each="team : ${teams}" th:value="${team.id}" th:text="${team.name}"></option>
           </select>
+          <small class="text-muted">Changing team does not automatically remove existing members.</small>
         </div>
 
         <div class="form-group">
-          <label>Assign Leader</label>
-          <select th:field="*{leaderId}" id="leaderSelect" class="form-control">
-            <option value="">-- Select Leader --</option>
-            <option th:if="${preloadedUsers != null}"
-                    th:each="u : ${preloadedUsers}"
-                    th:value="${u.id}"
-                    th:text="${u.name + ' (' + u.email + ')'}"
-                    th:selected="${u.id == projectRequest.leaderId}">
-            </option>
-          </select>
+          <label>Manage Members</label>
+          <select th:field="*{memberIds}" id="hiddenMemberSelect" multiple="multiple" style="display:none;"></select>
+
+          <div class="member-selection-container">
+            <div class="member-box">
+              <div class="member-box-header">
+                <span>Available Users</span>
+              </div>
+              <input type="text" id="userSearch" class="search-box" placeholder="Search name, email, team..." onkeyup="filterUsers()" />
+              <ul id="availableList" class="member-list">
+              </ul>
+            </div>
+
+            <div class="member-box">
+              <div class="member-box-header">
+                <span>Selected</span>
+                <span class="count-badge" id="selectedCount">0</span>
+              </div>
+              <div style="height: 40px; border-bottom: 1px solid #ced4da; background: #f8f9fa; display:flex; align-items:center; padding-left:15px; color:#666; font-size:0.85rem;">
+                <span>Current Project Members</span>
+              </div>
+              <ul id="selectedList" class="member-list">
+                <li class="empty-msg">No members selected.</li>
+              </ul>
+            </div>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>Select Members</label>
-          <small class="text-muted d-block mb-1">Hold <strong>Ctrl</strong>/<strong>Cmd</strong> to select multiple.</small>
-          <select th:field="*{memberIds}" id="membersSelect" class="form-control" multiple="multiple" style="height:150px;">
-            <option th:if="${preloadedUsers != null}"
-                    th:each="u : ${preloadedUsers}"
-                    th:value="${u.id}"
-                    th:text="${u.name + ' (' + u.email + ')'}"
-                    th:selected="${projectRequest.memberIds != null && projectRequest.memberIds.contains(u.id)}">
-            </option>
+        <div class="form-group leader-section">
+          <label>Assign Project Leader</label>
+          <select class="form-control" th:field="*{leaderId}" id="leaderSelect">
+            <option value="">-- Select Leader (Must be a selected member) --</option>
           </select>
+          <div th:if="${#fields.hasErrors('leaderId')}" th:errors="*{leaderId}" class="text-danger small"></div>
         </div>
       </fieldset>
 
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Update Project</button>
+      <div class="form-actions mt-4">
+        <a th:href="@{/admin/projects/{id}(id=${projectId})}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" onclick="prepareSubmit()">Update Project</button>
       </div>
     </form>
   </div>
 
   <script th:inline="javascript">
-    var contextPath = '/';
-    var originalTeamId = null;
+    /*<![CDATA[*/
+    var allUsers = /*[[${allUsers}]]*/ [];
+    var initialSelectedIds = /*[[${projectRequest.memberIds}]]*/ [];
+    var initialLeaderId = /*[[${projectRequest.leaderId}]]*/ null;
 
-    function onTeamChange(teamId) {
-      var leaderSelect = document.getElementById('leaderSelect');
-      var membersSelect = document.getElementById('membersSelect');
-      var alertBox = document.getElementById('teamChangeAlert');
+    var selectedUserIds = new Set();
 
-      if (alertBox) {
-        if (originalTeamId && String(teamId) !== String(originalTeamId)) {
-          alertBox.style.display = 'block';
+    if (initialSelectedIds) {
+      initialSelectedIds.forEach(id => selectedUserIds.add(parseInt(id)));
+    }
+
+    const availableList = document.getElementById('availableList');
+    const selectedList = document.getElementById('selectedList');
+    const searchInput = document.getElementById('userSearch');
+    const hiddenSelect = document.getElementById('hiddenMemberSelect');
+    const leaderSelect = document.getElementById('leaderSelect');
+    const selectedCountSpan = document.getElementById('selectedCount');
+
+    function renderLists() {
+      const searchTerm = searchInput.value.toLowerCase().trim();
+
+      availableList.innerHTML = '';
+      selectedList.innerHTML = '';
+
+      let hasSelected = false;
+
+      allUsers.forEach(user => {
+        const uId = user.id;
+        const uName = user.name || 'Unknown';
+        const uEmail = user.email || '';
+        const uTeam = user.activeTeam;
+        const uPosition = (user.currentPosition && user.currentPosition.name) ? user.currentPosition.name : 'N/A';
+
+        const isSelected = selectedUserIds.has(uId);
+
+        const userInfoHTML = `
+                    <div class="member-info">
+                        <span class="member-name">${uName}</span>
+                        <span class="member-meta">
+                            <i class="fas fa-envelope text-muted" style="font-size:10px;"></i> ${uEmail}
+                        </span>
+                        <div class="mt-1">
+                            <span class="badge-team">${uTeam ? uTeam : 'No Team'}</span>
+                            <span class="badge-pos">${uPosition}</span>
+                        </div>
+                    </div>
+                `;
+
+        if (isSelected) {
+          hasSelected = true;
+          const li = document.createElement('li');
+          li.className = 'member-item';
+          li.innerHTML = `
+                        ${userInfoHTML}
+                        <button type="button" class="btn-action btn-remove" onclick="removeMember(${uId})" title="Remove">
+                            <i class="fas fa-minus"></i>
+                        </button>
+                    `;
+          selectedList.appendChild(li);
         } else {
-          alertBox.style.display = 'none';
+          const matchName = uName.toLowerCase().includes(searchTerm);
+          const matchEmail = uEmail.toLowerCase().includes(searchTerm);
+          const matchTeam = uTeam && uTeam.toLowerCase().includes(searchTerm);
+
+          if (matchName || matchEmail || matchTeam) {
+            const li = document.createElement('li');
+            li.className = 'member-item';
+            li.innerHTML = `
+                            ${userInfoHTML}
+                            <button type="button" class="btn-action btn-add" onclick="addMember(${uId})" title="Add">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        `;
+            availableList.appendChild(li);
+          }
+        }
+      });
+
+      if (!hasSelected) {
+        selectedList.innerHTML = '<li class="empty-msg">No members selected.</li>';
+      }
+
+      selectedCountSpan.innerText = selectedUserIds.size;
+      updateLeaderDropdown();
+      updateHiddenInput();
+    }
+
+    function addMember(userId) {
+      selectedUserIds.add(userId);
+      renderLists();
+    }
+
+    function removeMember(userId) {
+      selectedUserIds.delete(userId);
+      if (leaderSelect.value == userId) {
+        leaderSelect.value = "";
+      }
+      renderLists();
+    }
+
+    function filterUsers() {
+      renderLists();
+    }
+
+    function updateLeaderDropdown() {
+      const currentLeader = leaderSelect.value || initialLeaderId;
+      leaderSelect.innerHTML = '<option value="">-- Select Leader (Must be a selected member) --</option>';
+
+      const selectedUsersObj = allUsers.filter(u => selectedUserIds.has(u.id));
+
+      selectedUsersObj.forEach(u => {
+        const option = document.createElement('option');
+        option.value = u.id;
+        option.text = `${u.name} (${u.email})`;
+        leaderSelect.appendChild(option);
+      });
+
+      if (currentLeader && selectedUserIds.has(parseInt(currentLeader))) {
+        leaderSelect.value = currentLeader;
+      } else {
+        if(initialLeaderId && selectedUserIds.has(parseInt(initialLeaderId))) {
+          leaderSelect.value = initialLeaderId;
         }
       }
+    }
 
-      leaderSelect.innerHTML = '<option value="">-- Select Leader --</option>';
-      membersSelect.innerHTML = '';
+    function updateHiddenInput() {
+      hiddenSelect.innerHTML = '';
+      selectedUserIds.forEach(id => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.selected = true;
+        hiddenSelect.appendChild(opt);
+      });
+    }
 
-      if (!teamId) {
-        leaderSelect.disabled = true;
-        membersSelect.disabled = true;
-        return;
-      }
-
-      leaderSelect.disabled = false;
-      membersSelect.disabled = false;
-      leaderSelect.innerHTML = '<option value="">-- Loading... --</option>';
-
-      var apiUrl = contextPath + 'admin/projects/api/teams/' + teamId + '/users';
-      apiUrl = apiUrl.replace('//', '/');
-
-      fetch(apiUrl)
-              .then(function(resp) {
-                if (!resp.ok) throw new Error("Network response was not ok");
-                return resp.json();
-              })
-              .then(function(users) {
-                leaderSelect.innerHTML = '<option value="">-- Select Leader --</option>';
-                membersSelect.innerHTML = '';
-
-                if (users && users.length > 0) {
-                  users.forEach(function(u) {
-                    var label = u.name + ' (' + u.email + ')';
-
-                    var optLeader = document.createElement('option');
-                    optLeader.value = u.id;
-                    optLeader.text = label;
-                    leaderSelect.add(optLeader);
-
-                    var optMember = document.createElement('option');
-                    optMember.value = u.id;
-                    optMember.text = label;
-                    membersSelect.add(optMember);
-                  });
-                } else {
-                  leaderSelect.innerHTML = '<option value="">-- No users in team --</option>';
-                }
-              })
-              .catch(function(err) {
-                console.error("Error:", err);
-                leaderSelect.innerHTML = '<option value="">Error loading users</option>';
-              });
+    function prepareSubmit() {
+      updateHiddenInput();
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-      var teamSelect = document.getElementById('teamSelect');
-      if (teamSelect && !teamSelect.value) {
-        var leader = document.getElementById('leaderSelect');
-        var member = document.getElementById('membersSelect');
-        if(leader) leader.disabled = true;
-        if(member) member.disabled = true;
-      }
+      renderLists();
 
       const startDateInput = document.getElementById('startDate');
       const endDateInput = document.getElementById('endDate');
       const dateError = document.getElementById('dateError');
 
-      if(startDateInput && endDateInput) {
-        function updateDateConstraints() {
-          const startDateVal = startDateInput.value;
-          if (startDateVal) {
-            const startDate = new Date(startDateVal);
-            startDate.setDate(startDate.getDate() + 1);
-            const minDateISO = startDate.toISOString().split('T')[0];
-            endDateInput.min = minDateISO;
-            if (endDateInput.value && endDateInput.value < minDateISO) {
-              endDateInput.value = '';
-              if(dateError) dateError.style.display = 'block';
-            } else {
-              if(dateError) dateError.style.display = 'none';
-            }
+      function updateDateConstraints() {
+        const startDateVal = startDateInput.value;
+        if (startDateVal) {
+          const startDate = new Date(startDateVal);
+          startDate.setDate(startDate.getDate() + 1);
+          const minDateISO = startDate.toISOString().split('T')[0];
+          endDateInput.min = minDateISO;
+
+          if (endDateInput.value && endDateInput.value < minDateISO) {
+            endDateInput.value = '';
+            dateError.style.display = 'block';
           } else {
-            endDateInput.removeAttribute('min');
+            dateError.style.display = 'none';
           }
+        } else {
+          endDateInput.removeAttribute('min');
         }
-        startDateInput.addEventListener('change', updateDateConstraints);
-        endDateInput.addEventListener('change', function() {
-          if(startDateInput.value && this.value && this.value <= startDateInput.value) {
-            if(dateError) dateError.style.display = 'block';
-            this.value = '';
-          } else {
-            if(dateError) dateError.style.display = 'none';
-          }
-        });
-        updateDateConstraints();
       }
+
+      startDateInput.addEventListener('change', updateDateConstraints);
+      endDateInput.addEventListener('change', function() {
+        if(startDateInput.value && this.value && this.value <= startDateInput.value) {
+          dateError.style.display = 'block';
+          this.value = '';
+        } else {
+          dateError.style.display = 'none';
+        }
+      });
+
+      if(startDateInput.value) updateDateConstraints();
     });
     /*]]>*/
   </script>
