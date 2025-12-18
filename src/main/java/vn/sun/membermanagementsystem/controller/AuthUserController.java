@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import vn.sun.membermanagementsystem.config.jwt.JwtUtils;
+import vn.sun.membermanagementsystem.config.security.AuthenticationLoggingHandler;
 import vn.sun.membermanagementsystem.config.services.CustomUserDetailsService;
 import vn.sun.membermanagementsystem.dto.request.LoginRequest;
 import vn.sun.membermanagementsystem.dto.response.LoginResponse;
@@ -36,6 +38,7 @@ public class AuthUserController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
     private final CustomUserDetailsService userDetailsService;
+    private final AuthenticationLoggingHandler authLoggingHandler;
     
     @Operation(
         summary = "User login",
@@ -68,7 +71,8 @@ public class AuthUserController {
         )
     })
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest,
+                                               HttpServletRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -83,6 +87,9 @@ public class AuthUserController {
             String jwt = jwtUtils.generateToken(userDetails);
             
             User user = userDetailsService.getUserByEmail(userDetails.getUsername());
+            
+            // Log successful API login
+            authLoggingHandler.logApiLogin(user.getEmail(), request);
             
             LoginResponse response = LoginResponse.builder()
                 .token(jwt)
@@ -120,7 +127,14 @@ public class AuthUserController {
     })
     @SecurityRequirement(name = "Bearer Authentication")
     @PostMapping("/logout")
-    public ResponseEntity<?> logoutUser() {
+    public ResponseEntity<?> logoutUser(HttpServletRequest request) {
+        // Get current user before clearing context
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            String email = auth.getName();
+            authLoggingHandler.logApiLogout(email, request);
+        }
+        
         SecurityContextHolder.clearContext();
         return ResponseEntity.ok(new MessageResponse("Logged out successfully"));
     }
