@@ -50,7 +50,7 @@
             </div>
 
             <div class="filter-item">
-              <select name="size" class="form-control">
+              <select name="size" class="form-control" onchange="this.form.submit()">
                 <option th:value="10" th:selected="${pageSize == 10}">
                   10 per page
                 </option>
@@ -225,85 +225,75 @@
       </div>
 
       <!-- Pagination -->
-      <div th:if="${totalPages > 1}" class="pagination-container">
-        <nav aria-label="Page navigation">
-          <ul class="pagination">
-            <!-- First Page -->
-            <li
-              class="page-item"
-              th:classappend="${currentPage == 0 ? 'disabled' : ''}"
-            >
-              <a
-                class="page-link"
-                th:href="@{/admin/teams(page=0, size=${pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, keyword=${keyword})}"
-                aria-label="First"
-              >
-                <span aria-hidden="true">&laquo;&laquo;</span>
-              </a>
-            </li>
+      <div class="pagination-container" th:if="${totalPages > 1}">
+        <div class="pagination">
+          <!-- First Page -->
+          <a
+            th:href="@{/admin/teams(page=0, size=${pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, keyword=${keyword})}"
+            class="page-link"
+            th:classappend="${currentPage == 0 ? 'disabled' : ''}"
+            th:aria-disabled="${currentPage == 0}"
+          >
+            <i class="fas fa-angle-double-left"></i>
+          </a>
 
-            <!-- Previous Page -->
-            <li
-              class="page-item"
-              th:classappend="${currentPage == 0 ? 'disabled' : ''}"
-            >
-              <a
-                class="page-link"
-                th:href="@{/admin/teams(page=${currentPage - 1}, size=${pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, keyword=${keyword})}"
-                aria-label="Previous"
-              >
-                <span aria-hidden="true">&laquo;</span>
-              </a>
-            </li>
+          <!-- Previous Page -->
+          <a
+            th:href="@{/admin/teams(page=${currentPage - 1}, size=${pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, keyword=${keyword})}"
+            class="page-link"
+            th:classappend="${currentPage == 0 ? 'disabled' : ''}"
+            th:aria-disabled="${currentPage == 0}"
+          >
+            <i class="fas fa-angle-left"></i>
+          </a>
 
-            <!-- Page Numbers -->
-            <li
-              class="page-item"
-              th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
-              th:if="${i >= currentPage - 2 && i <= currentPage + 2}"
-              th:classappend="${i == currentPage ? 'active' : ''}"
+          <!-- Page Numbers -->
+          <th:block th:each="pageNum : ${#numbers.sequence(0, totalPages - 1)}">
+            <a
+              th:if="${pageNum < 2 || pageNum >= totalPages - 2 || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)}"
+              th:href="@{/admin/teams(page=${pageNum}, size=${pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, keyword=${keyword})}"
+              class="page-link"
+              th:classappend="${pageNum == currentPage ? 'active' : ''}"
+              th:text="${pageNum + 1}"
+              >1</a
             >
-              <a
-                class="page-link"
-                th:href="@{/admin/teams(page=${i}, size=${pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, keyword=${keyword})}"
-                th:text="${i + 1}"
-                >1</a
-              >
-            </li>
 
-            <!-- Next Page -->
-            <li
-              class="page-item"
-              th:classappend="${currentPage == totalPages - 1 ? 'disabled' : ''}"
+            <span
+              th:if="${pageNum == 2 && currentPage > 3}"
+              class="page-ellipsis"
+              >...</span
             >
-              <a
-                class="page-link"
-                th:href="@{/admin/teams(page=${currentPage + 1}, size=${pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, keyword=${keyword})}"
-                aria-label="Next"
-              >
-                <span aria-hidden="true">&raquo;</span>
-              </a>
-            </li>
-
-            <!-- Last Page -->
-            <li
-              class="page-item"
-              th:classappend="${currentPage == totalPages - 1 ? 'disabled' : ''}"
+            <span
+              th:if="${pageNum == totalPages - 3 && currentPage < totalPages - 4}"
+              class="page-ellipsis"
+              >...</span
             >
-              <a
-                class="page-link"
-                th:href="@{/admin/teams(page=${totalPages - 1}, size=${pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, keyword=${keyword})}"
-                aria-label="Last"
-              >
-                <span aria-hidden="true">&raquo;&raquo;</span>
-              </a>
-            </li>
-          </ul>
-        </nav>
+          </th:block>
 
-        <div class="page-info">
+          <!-- Next Page -->
+          <a
+            th:href="@{/admin/teams(page=${currentPage + 1}, size=${pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, keyword=${keyword})}"
+            class="page-link"
+            th:classappend="${currentPage >= totalPages - 1 ? 'disabled' : ''}"
+            th:aria-disabled="${currentPage >= totalPages - 1}"
+          >
+            <i class="fas fa-angle-right"></i>
+          </a>
+
+          <!-- Last Page -->
+          <a
+            th:href="@{/admin/teams(page=${totalPages - 1}, size=${pageSize}, sortBy=${sortBy}, sortDir=${sortDir}, keyword=${keyword})}"
+            class="page-link"
+            th:classappend="${currentPage >= totalPages - 1 ? 'disabled' : ''}"
+            th:aria-disabled="${currentPage >= totalPages - 1}"
+          >
+            <i class="fas fa-angle-double-right"></i>
+          </a>
+        </div>
+
+        <div class="pagination-info">
           Page <strong th:text="${currentPage + 1}">1</strong> of
-          <strong th:text="${totalPages}">1</strong>
+          <strong th:text="${totalPages}">10</strong>
         </div>
       </div>
     </section>
